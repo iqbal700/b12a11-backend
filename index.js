@@ -77,17 +77,10 @@ async function run() {
         res.status(200).send(result)
     })
 
-    //==-== get single users ==-== //
 
-    // app.get('/users/:email', async(req,res) => {
-    //   const email = req.params.email
-    //   const query = {email: email}
-    //    const result = await userCollections.findOne(query)
-    //    res.send(result)
-    // })
 
     // ==-== update active and delete method ==-== //
-    app.patch('update/user/status/', verifyFBToken, async(req, res) => {
+    app.patch('/update/users/status', verifyFBToken, async(req, res) => {
        const {email, status} = req.query;
        const query = {email: email};
        const updateStatus = {
@@ -118,29 +111,21 @@ async function run() {
        res.send(result)
     })
 
-  
-
-
-    // products 
-
-    app.post('/products',  async(req, res) => {
-        const data = req.body;
-        data.createdAt = new Date();
-        const result = await productCollections.insertOne(data);
-        res.send(result)
-    })
-
-
-    // get own adding products 
-
-    app.get('/manager/product/:email' , async(req, res) => {
-      
-      const email = req.params.email;
+    // get own adding blood request  
+    app.get('/my-request', verifyFBToken, async(req, res) => {
+      const email = req.decoded_email;
+      const size = Number(req.query.size)
+      const page = Number(req.query.page)
       const query = {email:email};
+      const result = await bloodRequest
+      .find(query)
+      .limit(size)
+      .skip(size*page)
+      .toArray();
 
-      const result = await productCollections.find(query).toArray();
-      res.send(result);
+      const totalRequest = await bloodRequest.countDocuments(query)
 
+      res.send({request:result,totalRequest});
     })
 
     await client.db("admin").command({ ping: 1 });
