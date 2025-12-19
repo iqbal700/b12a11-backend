@@ -2,6 +2,8 @@ const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.STRIPE_SECRETE);
+const crypto = require('crypto');
 
 const app = express();
 app.use(cors())
@@ -41,6 +43,7 @@ catch(error) {
 }
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const { parse } = require('path');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.w0obvc9.mongodb.net/?appName=Cluster0`;
 
 
@@ -126,6 +129,42 @@ async function run() {
       const totalRequest = await bloodRequest.countDocuments(query)
 
       res.send({request:result,totalRequest});
+    })
+
+    // ==-== payment creation and add stripe api ==-== 
+
+    app.post('/create-payment-checkout', async(req, res) => {
+
+      const donation = req.body;
+      const amount = parseInt(donation.donateAmount) * 100;
+      
+      const session = await stripe.checkout.sessions.create({
+          line_items: [
+            {
+              price_data: {
+                currency: 'usd',
+                unit_amount: amount,
+                product_data: {
+                  name: 'please donate'
+                },
+              },
+              quantity: 1,
+            },
+          ],
+          mode: 'payment',
+          metadata: {
+              donorName: donation?.donorName,
+          },
+          customer_email: donation?.donorEmail,
+          
+
+          success_url: `${process.env.SITE_DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${process.env.SITE_DOMAIN}/payment-cancelled`,
+          
+      });
+
+      res.send({url:session.url})
+
     })
 
     await client.db("admin").command({ ping: 1 });
