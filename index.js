@@ -167,6 +167,18 @@ async function run() {
 
     })
 
+    // ==-== save donating users information ==-== //
+
+    app.post('/success-payment', async(req,res) => {
+        const {session_id} = req.query;
+        const session = await stripe.checkout.sessions.retrieve(
+            session_id
+      );
+      console.log(session)
+    })
+
+
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
